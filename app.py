@@ -1,85 +1,101 @@
-from flask import Flask, request, render_template, jsonify
-from tensorflow.keras.models import load_model
-import tensorflow as tf
-from keras import layers
-import numpy as np
-import os
+from selenium import webdriver
+from amazoncaptcha import AmazonCaptcha
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 
-app = Flask(__name__)
 
-class CTCLayer(tf.keras.layers.Layer):
-    def __init__(self, **kwargs):
-        super(CTCLayer, self).__init__(**kwargs)
-        self.loss_fn = tf.keras.backend.ctc_batch_cost
 
-    def call(self, y_true, y_pred):
-        batch_len = tf.cast(tf.shape(y_true)[0], dtype="int64")
-        input_length = tf.cast(tf.shape(y_pred)[1], dtype="int64")
-        label_length = tf.cast(tf.shape(y_true)[1], dtype="int64")
-        input_length = input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-        label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-        loss = self.loss_fn(y_true, y_pred, input_length, label_length)
-        self.add_loss(loss)
-        return y_pred
+service = Service('/home/karol/Job_Codes/For_Main_app/chromedriver')
 
-# Load the model
-model = load_model('captcha_model.h5', custom_objects={'CTCLayer': CTCLayer})
+driver = webdriver.Chrome(service=service)
 
-# Create prediction model
-prediction_model = tf.keras.models.Model(model.input[0], model.get_layer(name="dense2").output)
 
-# Define character mappings
-labels = ['2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'c', 'j', 's', 'u', 'w', 'x', 'y']
-characters = sorted(set(char for label in labels for char in label))
-max_length = 6
-char_to_num = layers.StringLookup(vocabulary=list(characters), mask_token=None)
-num_to_char = layers.StringLookup(vocabulary=char_to_num.get_vocabulary(), mask_token=None, invert=True)
+driver.get('https://www.amazon.com/errors/validateCaptcha')
 
-def preprocess_image(img_path, img_width=200, img_height=50):
-    img = tf.io.read_file(img_path)
-    img = tf.io.decode_png(img, channels=1)
-    img = tf.image.convert_image_dtype(img, tf.float32)
-    img = tf.image.resize(img, [img_height, img_width])
-    img = tf.transpose(img, perm=[1, 0, 2])
-    return img
+link = driver.find_element(By.XPATH, "//div[@class = 'a-row a-text-center']//img").get_attribute('src')
 
-def decode_batch_predictions(pred, num_to_char, max_length):
-    input_len = np.ones(pred.shape[0]) * pred.shape[1]
-    results = tf.keras.backend.ctc_decode(pred, input_length=input_len, greedy=True)[0][0][:, :max_length]
-    char_list = num_to_char.get_vocabulary()
+captcha = AmazonCaptcha.fromlink(link)
 
-    output_text = []
-    for result in results:
-        result_text = ''.join([char_list[int(x)] for x in result if int(x) != -1])
-        output_text.append(result_text)
+captcha_value = AmazonCaptcha.solve(captcha)
 
-    return output_text
+input_field = driver.find_element(By.ID,"captchacharacters").send_keys(captcha_value)
 
-def predict_text_from_image(img_path):
-    img = preprocess_image(img_path)
-    img = tf.expand_dims(img, axis=0)
-    pred = prediction_model.predict(img)
-    pred_texts = decode_batch_predictions(pred, num_to_char, max_length)
-    return pred_texts[0]
+button = driver.find_element(By.CLASS_NAME,"a-button-text")
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+button.click()
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
 
-    img_path = 'static/uploaded_image.png'
-    file.save(img_path)
 
-    predicted_text = predict_text_from_image(img_path)
-    return jsonify({'predicted_text': predicted_text})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+
+# import os
+# from selenium import webdriver
+# from selenium.webdriver.chrome.service import Service
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
+# from webdriver_manager.chrome import ChromeDriverManager
+# from amazoncaptcha import AmazonCaptcha
+
+# def solve_captcha(captcha_image_url):
+#     """Solves a captcha using the AmazonCaptcha library."""
+#     options = webdriver.ChromeOptions()
+#     options.add_argument("--start-maximized")
+#     service = Service('/home/karol/Job_Codes/For_Main_app/chromedriver')
+#     driver = webdriver.Chrome(service=service, options=options)
+    
+#     try:
+#         # Download the captcha image
+#         driver.get(captcha_image_url)
+#         captcha_image_path = "captcha_image.png"
+        
+#         # Save the captcha image
+#         with open(captcha_image_path, "wb") as file:
+#             file.write(driver.find_element(By.TAG_NAME, "img").screenshot_as_png)
+        
+#         # Use AmazonCaptcha to solve the captcha
+#         captcha = AmazonCaptcha(captcha_image_path)
+#         captcha_text = captcha.solve()
+
+#         return captcha_text, driver  # Return the driver for further use
+
+#     except Exception as e:
+#         print(f"Error occurred while solving captcha: {str(e)}")
+#         return None, driver
+
+#     finally:
+#         if os.path.exists(captcha_image_path):
+#             os.remove(captcha_image_path)
+    
+# def interact_with_amazon(driver, captcha_solution):
+#     """Interacts with Amazon after solving the CAPTCHA."""
+#     # Example: enter the CAPTCHA solution and submit the form
+#     try:
+#         captcha_input = driver.find_element(By.ID, "captcha-input-id")  # Replace with actual ID
+#         captcha_input.send_keys(captcha_solution)
+#         submit_button = driver.find_element(By.ID, "submit-button-id")  # Replace with actual ID
+#         submit_button.click()
+
+#         # Continue with further interactions (e.g., searching for products)
+#         # driver.get("https://www.amazon.com/s?k=your_search_term")
+#         # Add more actions as needed...
+
+#     except Exception as e:
+#         print(f"Error during interaction: {str(e)}")
+
+# # Example usage
+# if __name__ == "__main__":
+#     captcha_image_url = "https://images-na.ssl-images-amazon.com/captcha/yniigayf/Captcha_qrztemjyxp.jpg"  # Replace with actual URL
+#     captcha_solution, driver = solve_captcha(captcha_image_url)
+    
+#     if captcha_solution:
+#         print(f"Solved Captcha: {captcha_solution}")
+#         interact_with_amazon(driver, captcha_solution)
+#     else:
+#         print("Failed to solve captcha.")
+
+
+
+
