@@ -1,0 +1,88 @@
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Center the CAPTCHA box on the page */
+body, html {
+    height: 100%;
+    background-color: #f2f2f2;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* CAPTCHA box styling */
+.captcha-box {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 350px;
+}
+
+.captcha-box h2 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.captcha-box p {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.captcha-image {
+    width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+/* CAPTCHA input and submit button */
+.captcha-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.captcha-submit {
+    width: 100%;
+    padding: 10px;
+    background-color: #ff9900;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.captcha-submit:hover {
+    background-color: #e68a00;
+}
+
+/* Refresh CAPTCHA link */
+.captcha-refresh {
+    font-size: 0.9em;
+    color: #007185;
+}
+
+.captcha-refresh a {
+    color: #007185;
+    text-decoration: none;
+}
+
+.captcha-refresh a:hover {
+    text-decoration: underline;
+}
