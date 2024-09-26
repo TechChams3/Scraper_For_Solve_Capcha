@@ -22,14 +22,14 @@ class CTCLayer(tf.keras.layers.Layer):
         self.add_loss(loss)
         return y_pred
 
-# Load the models
-model = load_model('AmazonCaptcha_model.h5', custom_objects={'CTCLayer': CTCLayer})
+# Load the model
+model = load_model('captcha_model.h5', custom_objects={'CTCLayer': CTCLayer})
 
 # Create prediction model
 prediction_model = tf.keras.models.Model(model.input[0], model.get_layer(name="dense2").output)
 
 # Define character mappings
-labels = ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'T', 'U', 'X', 'Y']
+labels = ['2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'c', 'j', 's', 'u', 'w', 'x', 'y']
 characters = sorted(set(char for label in labels for char in label))
 max_length = 6
 char_to_num = layers.StringLookup(vocabulary=list(characters), mask_token=None)
@@ -64,7 +64,7 @@ def predict_text_from_image(img_path):
 
 @app.route('/')
 def index():
-    return render_template('Home.html')
+    return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
